@@ -20,12 +20,23 @@ def report_status():
 
 1. 将 `your-worker-domain` 替换为你的实际 Worker 域名
 2. 确保 Worker 已正确部署并配置了 `/save-name` 端点
-3. 测试连接是否正常
+3. 检查依赖是否安装 pip install -r requirements.txt
+4. 测试连接是否正常
 
 ---
 
 ## 📦 基础打包命令（无控制台窗口）
 
+1.使用nuitka（推荐）
+```bash
+nuitka --standalone --onefile --disable-console --windows-icon-from-ico="logo.ico" --output-dir=output Sleepy.py
+```
+
+或者
+
+2.使用pyinstaller
 ```bash
 pyinstaller -F -w -i "logo.ico" Sleepy.py
 ```
+
+
