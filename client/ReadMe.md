@@ -32,11 +32,11 @@ def report_status():
 nuitka --standalone --onefile --disable-console --windows-icon-from-ico="logo.ico" --output-dir=output Sleepy.py
 ```
 
-或者
 
 2.使用pyinstaller
 ```bash
 pyinstaller -F -w -i "logo.ico" Sleepy.py
 ```
+
 
 
