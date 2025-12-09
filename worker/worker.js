@@ -563,7 +563,7 @@ async function handleSaveName(request, kv, TOKEN) {
     }
     
     // 验证Token
-    const expectedToken = typeof token !== 'undefined' ? token : null;
+    const expectedToken = typeof TOKEN !== 'undefined' ? TOKEN : null;
     
     if (!expectedToken) {
       return new Response(
