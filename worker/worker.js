@@ -16,7 +16,7 @@ export default {
       if (path === '/' || path === '/index.html') {
         return serveHtml();
       } else if (path === '/api/save-name' && request.method === 'POST') {
-        return await handleSaveName(request, env.SLEEPY_KV);
+        return await handleSaveName(request, env.SLEEPY_KV, env.TOKEN);
       } else if (path === '/api/get-name' && request.method === 'GET') {
         return await handleGetName(env.SLEEPY_KV);
       } else {
@@ -71,6 +71,14 @@ async function serveHtml() {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>正在干嘛呢？</title>
+    <!-- 使用自定义favicon -->
+    // <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    
+    /*     
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png"> 
+    */
     <style>
         * {
             margin: 0;
@@ -420,8 +428,11 @@ async function serveHtml() {
             // 更新运行应用显示
             document.getElementById('runningApp').textContent = data.name || '-';
             
-            // 如果运行应用显示为"监听程序已停止"，则将背景更改为红色
-            if (data.name === '监听程序已停止') {
+            // 定义表示程序停止的状态名称集合
+            const stoppedStatusNames = ['监听程序被中断', '监听程序已停止'];
+            
+            // 如果运行应用显示为停止状态，则将背景更改为红色
+            if (stoppedStatusNames.includes(data.name)) {
                 document.getElementById('runningContainer').style.background = 'linear-gradient(120deg, #fad0c4, #ff9a9e)';
             } else {
                 // 恢复默认样式
@@ -450,7 +461,7 @@ async function serveHtml() {
                 const savedAt = data.savedAt || now;
                 const fiveMinutes = 5 * 60 * 1000; // 5分钟
                 
-                if (now - savedAt > fiveMinuTtes) {
+                if (now - savedAt > fiveMinutes) {
                     statusElement.textContent = '似了喵';
                     updateStatusContainer('offline');
                 } else {
@@ -468,6 +479,11 @@ async function serveHtml() {
                 
                 // 如果超过5分钟认为是离线
                 if (diffMs > 5 * 60 * 1000) {
+                    // 设置离线UI
+                    document.getElementById('currentStatus').textContent = '似了喵';
+                    document.getElementById('runningApp').textContent = '无';
+                    updateStatusContainer('offline');
+
                     const minutes = Math.floor(diffMs / 60000);
                     const hours = Math.floor(minutes / 60);
                     const days = Math.floor(hours / 24);
@@ -519,7 +535,7 @@ async function serveHtml() {
 }
 
 // 保存名字到 KV
-async function handleSaveName(request, kv) {
+async function handleSaveName(request, kv, TOKEN) {
   try {
     // 检查是否有请求体
     if (!request.body) {
@@ -541,6 +557,29 @@ async function handleSaveName(request, kv) {
         JSON.stringify({ error: '无效的 JSON 数据' }),
         { 
           status: 400,
+          headers: getCorsHeaders()
+        }
+      );
+    }
+    
+    // 验证Token
+    const expectedToken = typeof token !== 'undefined' ? token : null;
+    
+    if (!expectedToken) {
+      return new Response(
+        JSON.stringify({ error: '服务器未配置TOKEN' }),
+        { 
+          status: 500,
+          headers: getCorsHeaders()
+        }
+      );
+    }
+    
+    if (!data.token || data.token !== expectedToken) {
+      return new Response(
+        JSON.stringify({ error: '无效的访问令牌' }),
+        { 
+          status: 401,
           headers: getCorsHeaders()
         }
       );
@@ -568,11 +607,45 @@ async function handleSaveName(request, kv) {
       );
     }
     
+    // 验证时间戳数据
+    if (!data.timestamp || !data.savedAt) {
+      return new Response(
+        JSON.stringify({ error: '缺少时间戳数据' }),
+        { 
+          status: 400,
+          headers: getCorsHeaders()
+        }
+      );
+    }
+    
+    // 验证时间戳格式
+    const timestampDate = new Date(data.timestamp);
+    if (isNaN(timestampDate.getTime())) {
+      return new Response(
+        JSON.stringify({ error: '时间戳格式无效' }),
+        { 
+          status: 400,
+          headers: getCorsHeaders()
+        }
+      );
+    }
+    
+    // 验证savedAt是否为有效数字
+    if (typeof data.savedAt !== 'number' || isNaN(data.savedAt)) {
+      return new Response(
+        JSON.stringify({ error: 'savedAt格式无效' }),
+        { 
+          status: 400,
+          headers: getCorsHeaders()
+        }
+      );
+    }
+    
     // 准备存储的数据
     const userData = {
       name: name,
-      timestamp: new Date().toISOString(),
-      savedAt: Date.now(),
+      timestamp: data.timestamp,  // 直接使用客户端传来的时间戳
+      savedAt: data.savedAt,      // 直接使用客户端传来的savedAt
       running: data.running !== undefined ? Boolean(data.running) : undefined
     };
     

@@ -6,6 +6,7 @@ import os
 import sys
 from datetime import datetime
 # import configparser
+# import uuid
 
 # ------------------------------------------------------
 # 日志配置
@@ -67,8 +68,29 @@ logger = setup_logging()
 # ------------------------------------------------------
 def report_status(name, running):
     url = "https://sleepy.nth2miss.cn/api/save-name"
+    
+    token = "mysleepyApp"
+    
     headers = {"content-type": "application/json"}
-    data = {"name": name, "running": running}
+    
+    # 生成时间戳数据
+    current_time = datetime.now()
+    timestamp_iso = current_time.isoformat()
+    saved_at_ms = int(current_time.timestamp() * 1000)
+    
+    # 生成固定Token（基于机器标识）
+    # computer_name = os.environ.get('COMPUTERNAME', '')
+    # token = str(uuid.uuid5(uuid.NAMESPACE_DNS, computer_name)).replace('-', '')
+
+
+
+    data = {
+        "name": name, 
+        "running": running,
+        "timestamp": timestamp_iso,
+        "savedAt": saved_at_ms,
+        "token": token
+    }
 
     try:
         requests.post(url, headers=headers, json=data, timeout=2)
