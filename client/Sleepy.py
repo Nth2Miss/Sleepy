@@ -5,8 +5,11 @@ import logging
 import os
 import sys
 from datetime import datetime
+import socket
+import uuid
+
 # import configparser
-# import uuid
+
 
 # ------------------------------------------------------
 # 日志配置
@@ -67,10 +70,8 @@ logger = setup_logging()
 # 上报函数
 # ------------------------------------------------------
 def report_status(name, running):
-    url = "https://sleepy.nth2miss.cn/api/save-name"
-    
+    url = "https://sleepy.nth2miss.cn/api/save-name"  # 请确保替换为你的Worker域名
     token = "mysleepyApp"
-    
     headers = {"content-type": "application/json"}
     
     # 生成时间戳数据
@@ -78,23 +79,25 @@ def report_status(name, running):
     timestamp_iso = current_time.isoformat()
     saved_at_ms = int(current_time.timestamp() * 1000)
     
-    # 生成固定Token（基于机器标识）
-    # computer_name = os.environ.get('COMPUTERNAME', '')
-    # token = str(uuid.uuid5(uuid.NAMESPACE_DNS, computer_name)).replace('-', '')
-
-
+    # 自动获取设备名称
+    machine_name = socket.gethostname()
+    
+    # 生成固定基于机器标识的 machineID
+    machine_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, machine_name)).replace('-', '')
 
     data = {
         "name": name, 
         "running": running,
         "timestamp": timestamp_iso,
         "savedAt": saved_at_ms,
-        "token": token
+        "token": token,
+        "machineId": machine_id,        # 新增：上传机器ID
+        "machineName": machine_name     # 新增：上传机器名称
     }
 
     try:
         requests.post(url, headers=headers, json=data, timeout=2)
-        logger.info(f"[上报] {name} -> {running}")
+        logger.info(f"[上报] {machine_name}({machine_id[:6]}) -> {name} -> {running}")
     except Exception as e:
         logger.error(f"[上报失败] {e}")
 
