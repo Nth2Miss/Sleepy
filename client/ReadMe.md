@@ -3,17 +3,12 @@
 在 `Sleepy.py` 中找到 `report_status` 函数，将其中调用 Worker 的 URL 替换为你自己的域名：
 
 ```python
-def report_status():
-    """
-    向监测服务器报告当前系统状态
-    """
-    def report_status(name, running):
-        # 替换这里的 URL 为你的 Worker 域名
-        # ⬇️ 修改这一行 ⬇️
-        url = "https://your-worker-domain/api/save-name"
-        headers = {"content-type": "application/json"}
-        data = {"name": name, "running": running}
-
+def report_status(name, running):
+    # ⚠️ 1. 将此处的 URL 替换为你 Cloudflare Worker 的真实域名
+    url = "https://sleepy.你的域名.workers.dev/api/save-name" 
+    
+    # ⚠️ 2. 将此处的 token 替换为你在 Worker 环境变量中设置的 TOKEN
+    token = "mysleepyApp"
 ```
 
 **注意：**
@@ -28,15 +23,15 @@ def report_status():
 ## 📦 基础打包命令（无控制台窗口）
 
 1.使用nuitka（推荐）
+
 ```bash
 nuitka --standalone --onefile --disable-console --windows-icon-from-ico="logo.ico" --output-dir=output Sleepy.py
 ```
 
-
 2.使用pyinstaller
+
 ```bash
 pyinstaller -F -w -i "logo.ico" Sleepy.py
 ```
-
 
 
